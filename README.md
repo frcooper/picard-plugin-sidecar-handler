@@ -22,3 +22,13 @@ Moves/copies configured “sidecar” artifacts (files and directory trees) alon
 - This repo uses Picard’s shared venv: `../picard/.venv`.
 - Run tests: `python -m pytest`
 - Build deterministic zip: `python scripts/build.py`
+
+## Companion script (dev utility)
+
+This repo also includes a small helper CLI for bulk attaching sidecars (lyrics + folder-level cover) and cleaning up broken sidecar symlinks.
+
+- Attach (best-effort link, fallback to copy): `python scripts/sidecar_links.py <root> attach -v`
+- Attach (force copy, overwrite existing destinations): `python scripts/sidecar_links.py <root> attach --link-type copy --conflict overwrite -v`
+- Cleanup broken links: `python scripts/sidecar_links.py <root> cleanup -v`
+
+Note: this script is a development utility and is not included in the built plugin ZIP.
