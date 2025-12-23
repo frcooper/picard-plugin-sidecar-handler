@@ -45,6 +45,48 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
+      - name: Determine previous tag
+        id: prev
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="${{ steps.meta.outputs.tag }}"
+          prev=""
+
+          # Tags sorted by semver-like order (vX.Y.Z).
+          mapfile -t tags < <(git tag --list 'v*' --sort=-version:refname)
+
+          for t in "${tags[@]}"; do
+            if [[ "$t" != "$current" ]]; then
+              prev="$t"
+              break
+            fi
+          done
+
+          echo "prev=$prev" >> "$GITHUB_OUTPUT"
+
+      - name: Build release notes (commit list)
+        shell: bash
+        run: |
+          set -euo pipefail
+          prev="${{ steps.prev.outputs.prev }}"
+          ref="${{ inputs.target_ref }}"
+
+          if [[ -z "$prev" ]]; then
+            printf '%s\n' "Initial release." > release_notes.md
+            exit 0
+          fi
+
+          printf '%s\n\n' "Changes since $prev:" > release_notes.md
+
+          # Note: use the ref being released (branch, tag, or sha)
+          commits="$(git log --pretty=format:'- %s (%h) — %an' "$prev..$ref" || true)"
+          if [[ -z "$commits" ]]; then
+            printf '%s\n' "- (no commits found)" >> release_notes.md
+          else
+            printf '%s\n' "$commits" >> release_notes.md
+          fi
+
       - name: Create GitHub release and upload artifacts
         uses: softprops/action-gh-release@v2
         with:
@@ -52,7 +94,8 @@ jobs:
           name: ${{ steps.meta.outputs.tag }}
           target_commitish: ${{ inputs.target_ref }}
           prerelease: ${{ inputs.prerelease }}
-          generate_release_notes: true
+          generate_release_notes: false
+          body_path: release_notes.md
           files: |
             dist/sidecar-handler_${{ steps.meta.outputs.version }}.zip
             dist/SHA256SUMS
