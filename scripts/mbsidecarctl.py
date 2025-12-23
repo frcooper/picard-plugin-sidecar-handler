@@ -1,8 +1,24 @@
 from __future__ import annotations
 
+"""mbsidecarctl: companion CLI for Sidecar Handler.
+
+Scans a directory tree and can:
+- Attach lyrics (per-audio .lrc) and folder-level cover images as links or copies
+- Remove broken sidecar symlinks
+
+This is a development utility and is not included in the plugin ZIP.
+"""
+
 import argparse
 import logging
+import sys
 from pathlib import Path
+
+# Allow running as a script from the repo without installing a package.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
 
 from sidecar_handler.sidecar_links import (
     AUDIO_EXTS_DEFAULT,
@@ -10,6 +26,34 @@ from sidecar_handler.sidecar_links import (
     attach_sidecars,
     cleanup_broken_sidecar_links,
 )
+
+
+def _read_version(repo_root: Path) -> str:
+    manifest = repo_root / "MANIFEST.toml"
+    try:
+        text = manifest.read_text(encoding="utf-8")
+    except OSError:
+        return "unknown"
+
+    # Prefer tomllib when available.
+    try:
+        import tomllib  # type: ignore[attr-defined]
+
+        data = tomllib.loads(text)
+        v = data.get("version")
+        return v if isinstance(v, str) and v else "unknown"
+    except Exception:  # noqa: BLE001 - best-effort for a dev utility
+        pass
+
+    # Fallback: simple parse
+    for line in text.splitlines():
+        line = line.strip()
+        if line.startswith("version") and "=" in line:
+            _, rhs = line.split("=", 1)
+            rhs = rhs.strip().strip('"').strip("'")
+            if rhs:
+                return rhs
+    return "unknown"
 
 
 def _configure_logging(verbosity: int) -> logging.Logger:
@@ -23,13 +67,24 @@ def _configure_logging(verbosity: int) -> logging.Logger:
         level=level,
         format="%(asctime)s %(levelname)s %(message)s",
     )
-    return logging.getLogger("sidecar-links")
+    return logging.getLogger("mbsidecarctl")
 
 
-def _build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="sidecar-links")
+def _build_parser(version: str) -> argparse.ArgumentParser:
+    desc = (
+        f"mbsidecarctl {version} - bulk attach/cleanup of sidecar artifacts. "
+        "Attaches per-audio .lrc lyrics and folder-level cover images, or removes broken sidecar symlinks."
+    )
+
+    p = argparse.ArgumentParser(prog="mbsidecarctl", description=desc)
     p.add_argument("root", type=Path, help="Root folder to scan")
     p.add_argument("-v", "--verbose", action="count", default=0, help="Increase log verbosity")
+    p.add_argument(
+        "--version",
+        action="version",
+        version=f"mbsidecarctl {version}",
+        help="Print version and exit",
+    )
 
     sub = p.add_subparsers(dest="cmd", required=True)
 
@@ -85,7 +140,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = _build_parser().parse_args(argv)
+    repo_root = Path(__file__).resolve().parents[1]
+    version = _read_version(repo_root)
+
+    args = _build_parser(version).parse_args(argv)
     logger = _configure_logging(args.verbose)
 
     root: Path = args.root

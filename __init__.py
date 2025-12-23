@@ -8,8 +8,14 @@ from __future__ import annotations
 
 from picard.plugin3.api import PluginApi
 
-from .sidecar_handler.plugin_hooks import on_file_post_save, on_file_pre_save
-from .sidecar_handler.options import SidecarHandlerOptionsPage
+try:
+    # When installed in Picard, the plugin lives inside a UUID-namespaced package.
+    from .sidecar_handler.plugin_hooks import on_file_post_save, on_file_pre_save
+    from .sidecar_handler.options import SidecarHandlerOptionsPage
+except ImportError:  # pragma: no cover
+    # When running from the repo (e.g., pytest collection), there is no parent package.
+    from sidecar_handler.plugin_hooks import on_file_post_save, on_file_pre_save
+    from sidecar_handler.options import SidecarHandlerOptionsPage
 
 
 def enable(api: PluginApi) -> None:

@@ -1,7 +1,7 @@
 uuid = "6ee9abdd-40e5-4479-a068-75dcebc1fa68"
 name = "Sidecar Handler"
 authors = ["frcooper + GitHub Copilot"]
-version = "0.1.0"
+version = "0.1.1"
 description = "Moves/copies sidecar artifacts alongside files on save/move."
 api = ["3.0"]
 license = "GPL-2.0-or-later"

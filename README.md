@@ -27,8 +27,9 @@ Moves/copies configured “sidecar” artifacts (files and directory trees) alon
 
 This repo also includes a small helper CLI for bulk attaching sidecars (lyrics + folder-level cover) and cleaning up broken sidecar symlinks.
 
-- Attach (best-effort link, fallback to copy): `python scripts/sidecar_links.py <root> attach -v`
-- Attach (force copy, overwrite existing destinations): `python scripts/sidecar_links.py <root> attach --link-type copy --conflict overwrite -v`
-- Cleanup broken links: `python scripts/sidecar_links.py <root> cleanup -v`
+- Help (includes version + description): `python scripts/mbsidecarctl.py -h`
+- Attach (best-effort link, fallback to copy): `python scripts/mbsidecarctl.py <root> attach -v`
+- Attach (force copy, overwrite existing destinations): `python scripts/mbsidecarctl.py <root> attach --link-type copy --conflict overwrite -v`
+- Cleanup broken links: `python scripts/mbsidecarctl.py <root> cleanup -v`
 
 Note: this script is a development utility and is not included in the built plugin ZIP.
