@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib
 from typing import Optional
 
-from picard.plugin3.api import OptionsPage
+from picard.plugin3.api import OptionsPage, PluginApi
 
 from .config import (
     ConfigError,
@@ -90,9 +90,11 @@ class SidecarHandlerOptionsPage(OptionsPage):
     TITLE = "Sidecar Handler"
     PARENT = "plugins"
 
-    def __init__(self, api=None, parent=None):
+    # Picard sets this attribute when registering options pages.
+    api: PluginApi
+
+    def __init__(self, parent=None):
         super().__init__(parent)
-        self.api = api
 
         QtWidgets, QtCore = _qt()
         self._QtCore = QtCore
@@ -144,7 +146,7 @@ class SidecarHandlerOptionsPage(OptionsPage):
         raw = self.api.plugin_config.get(RULES_KEY)
         try:
             rules = rules_from_json(raw) if raw else default_rules()
-        except Exception:
+        except (ConfigError, TypeError, ValueError):
             rules = default_rules()
         self._load_rules_into_table(rules)
 

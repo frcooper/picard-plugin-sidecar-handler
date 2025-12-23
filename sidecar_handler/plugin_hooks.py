@@ -28,7 +28,7 @@ def on_file_pre_save(api, file):  # type: ignore[no-untyped-def]
         p = getattr(file, "filename", None)
         if p:
             _old_paths[file] = str(p)
-    except Exception:
+    except (TypeError, AttributeError):
         api.logger.debug("Sidecar Handler: failed capturing pre-save filename", exc_info=True)
 
 
@@ -47,12 +47,13 @@ def on_file_post_save(api, file):  # type: ignore[no-untyped-def]
 
         # One-time warning if users have Picard's own additional-files moving enabled.
         if api.plugin_config.get(SUPERSEDE_KEY, False) and not api.plugin_config.get(WARNED_KEY, False):
+            move_additional = False
+            pattern = ""
             try:
-                move_additional = api.global_config.setting.get("move_additional_files", False)
-                pattern = api.global_config.setting.get("move_additional_files_pattern", "")
-            except Exception:
-                move_additional = False
-                pattern = ""
+                move_additional = bool(api.global_config.setting.get("move_additional_files", False))
+                pattern = str(api.global_config.setting.get("move_additional_files_pattern", ""))
+            except (AttributeError, TypeError):
+                pass
             if move_additional and str(pattern).strip():
                 api.logger.warning(
                     "Sidecar Handler: Picard 'Move additional files' is enabled; "
@@ -70,7 +71,7 @@ def on_file_post_save(api, file):  # type: ignore[no-untyped-def]
             meta = getattr(file, "metadata", None)
             if meta is not None:
                 meta_map = dict(meta)
-        except Exception:
+        except (TypeError, ValueError):
             meta_map = None
 
         ops = plan_sidecar_ops(
@@ -84,5 +85,5 @@ def on_file_post_save(api, file):  # type: ignore[no-untyped-def]
 
     except ConfigError as exc:
         api.logger.error("Sidecar Handler: configuration error: %s", exc)
-    except Exception:
+    except (OSError, RuntimeError, AttributeError, TypeError, ValueError):
         api.logger.error("Sidecar Handler: processing failed", exc_info=True)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import os
 import sys
 import zipfile
 from pathlib import Path
@@ -30,9 +29,9 @@ def _iter_plugin_files(root: Path) -> list[Path]:
 
     pkg = root / "sidecar_handler"
     if pkg.is_dir():
-        for path in sorted(pkg.rglob("*.py")):
-            if path.is_file():
-                files.append(path)
+        for file_path in sorted(pkg.rglob("*.py")):
+            if file_path.is_file():
+                files.append(file_path)
 
     return files
 

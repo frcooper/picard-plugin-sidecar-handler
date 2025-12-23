@@ -1,0 +1,20 @@
+[MASTER]
+ignore=__pycache__,.venv,.git
+init-hook=import os,sys; default=r"f:/repos/picard"; extra=[p for p in os.environ.get("PYTHONPATH","").split(os.pathsep) if p]; sys.path[:0]=[p for p in ([default]+extra) if os.path.isdir(p) and p not in sys.path]
+
+[MESSAGES CONTROL]
+disable=
+  C0114,
+  C0116,
+  C0301,
+  C0103,
+  missing-module-docstring,
+  missing-function-docstring,
+  missing-class-docstring,
+  import-error,
+  superfluous-parens,
+  too-many-locals,
+  too-many-instance-attributes
+
+[FORMAT]
+indent-string='    '

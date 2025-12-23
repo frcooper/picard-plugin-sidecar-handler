@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import shutil
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Literal
+from typing import Iterable
 
 from .engine import ConflictPolicy, FileOp, TreeOp, Op
 from .logutil import get_logger
