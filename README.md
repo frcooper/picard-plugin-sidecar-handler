@@ -33,3 +33,9 @@ This repo also includes a small helper CLI for bulk attaching sidecars (lyrics +
 - Cleanup broken links: `python scripts/mbsidecarctl.py <root> cleanup -v`
 
 Note: this script is a development utility and is not included in the built plugin ZIP.
+
+## Developer notes
+
+- `AGENTS.md` is the canonical source for agent instructions.
+- Generated files: `.github/copilot-instructions.md`, `GEMINI.md`, `.gemini/styleguide.md`.
+- Regenerate: `python scripts/sync_agent_docs.py --write`.
