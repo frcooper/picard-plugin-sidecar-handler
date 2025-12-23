@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD041 MD022 MD032 MD004 -->
+
 ## Agent instructions (canonical)
 
 Generated files (do not edit; regenerate with `python scripts/sync_agent_docs.py --write`):
