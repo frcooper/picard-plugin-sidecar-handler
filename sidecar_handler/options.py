@@ -5,6 +5,8 @@ from typing import Optional
 
 from picard.plugin3.api import OptionsPage, PluginApi
 
+from picard.ui.options import OptionsCheckError
+
 from .config import (
     ConfigError,
     SidecarRule,
@@ -13,7 +15,7 @@ from .config import (
     rules_to_json,
     validate_rules_static,
 )
-from .plugin_hooks import RULES_KEY, SUPERSEDE_KEY
+from .plugin_hooks import RULES_KEY, SUPERSEDE_KEY, ensure_plugin_defaults
 
 
 def _qt():
@@ -100,10 +102,9 @@ class SidecarHandlerOptionsPage(OptionsPage):
         self._QtCore = QtCore
         self._QtWidgets = QtWidgets
 
-        root = QtWidgets.QWidget(parent)
-        layout = QtWidgets.QVBoxLayout(root)
+        layout = QtWidgets.QVBoxLayout(self)
 
-        self.table = QtWidgets.QTableWidget(root)
+        self.table = QtWidgets.QTableWidget(self)
         self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels(
             ["Sidecar Type", "Embedded", "Embedded Tag / Filemask", "Enabled"]
@@ -134,33 +135,32 @@ class SidecarHandlerOptionsPage(OptionsPage):
         self._update_buttons()
 
         self.setLayout(layout)
-        self._root = root
-
-    def get_widget(self):
-        return self._root
 
     def load(self):
-        self.api.plugin_config.register_option(RULES_KEY, rules_to_json(default_rules()))
-        self.api.plugin_config.register_option(SUPERSEDE_KEY, False)
+        ensure_plugin_defaults(self.api)
 
-        raw = self.api.plugin_config.get(RULES_KEY)
+        raw = self.api.plugin_config[RULES_KEY]
         try:
             rules = rules_from_json(raw) if raw else default_rules()
         except (ConfigError, TypeError, ValueError):
             rules = default_rules()
         self._load_rules_into_table(rules)
 
-        self.supersede_cb.setChecked(bool(self.api.plugin_config.get(SUPERSEDE_KEY, False)))
+        self.supersede_cb.setChecked(bool(self.api.plugin_config[SUPERSEDE_KEY]))
 
     def save(self):
-        rules = self._rules_from_table()
-        validate_rules_static(rules)
+        try:
+            rules = self._rules_from_table()
+            validate_rules_static(rules)
+        except ConfigError as exc:
+            raise OptionsCheckError("Invalid rule", str(exc)) from exc
+
         self.api.plugin_config[RULES_KEY] = rules_to_json(rules)
         self.api.plugin_config[SUPERSEDE_KEY] = self.supersede_cb.isChecked()
 
     def _message_error(self, title: str, message: str) -> None:
         QtWidgets = self._QtWidgets
-        box = QtWidgets.QMessageBox(self._root)
+        box = QtWidgets.QMessageBox(self)
         box.setIcon(QtWidgets.QMessageBox.Icon.Warning)
         box.setWindowTitle(title)
         box.setText(message)
@@ -225,7 +225,7 @@ class SidecarHandlerOptionsPage(OptionsPage):
 
     def _add_row(self):
         try:
-            dlg = _RuleDialog(self._root, default_rules()[0])
+            dlg = _RuleDialog(self, default_rules()[0])
             if dlg.exec() != 1:
                 return
             rule = dlg.get_rule()
@@ -241,7 +241,7 @@ class SidecarHandlerOptionsPage(OptionsPage):
             return
         try:
             current = self._rule_from_row(row)
-            dlg = _RuleDialog(self._root, current)
+            dlg = _RuleDialog(self, current)
             if dlg.exec() != 1:
                 return
             rule = dlg.get_rule()

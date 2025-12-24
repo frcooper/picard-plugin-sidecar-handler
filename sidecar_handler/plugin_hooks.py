@@ -14,6 +14,18 @@ SUPERSEDE_KEY = "supersede_additional_files"
 WARNED_KEY = "warned_about_additional_files"
 
 
+def ensure_plugin_defaults(api) -> None:  # type: ignore[no-untyped-def]
+    """Register plugin options so defaults and stored values resolve correctly.
+
+    Picard's ConfigSection is not a dict; options must be registered for
+    __getitem__ to return either stored values or defaults.
+    """
+
+    api.plugin_config.register_option(RULES_KEY, rules_to_json(default_rules()))
+    api.plugin_config.register_option(SUPERSEDE_KEY, False)
+    api.plugin_config.register_option(WARNED_KEY, False)
+
+
 _old_paths: "weakref.WeakKeyDictionary[Any, str]" = weakref.WeakKeyDictionary()
 
 
@@ -41,17 +53,15 @@ def on_file_post_save(api, file):  # type: ignore[no-untyped-def]
         if not src_path or not dst_path:
             return
 
-        api.plugin_config.register_option(RULES_KEY, rules_to_json(default_rules()))
-        api.plugin_config.register_option(SUPERSEDE_KEY, False)
-        api.plugin_config.register_option(WARNED_KEY, False)
+        ensure_plugin_defaults(api)
 
         # One-time warning if users have Picard's own additional-files moving enabled.
-        if api.plugin_config.get(SUPERSEDE_KEY, False) and not api.plugin_config.get(WARNED_KEY, False):
+        if api.plugin_config[SUPERSEDE_KEY] and not api.plugin_config[WARNED_KEY]:
             move_additional = False
             pattern = ""
             try:
-                move_additional = bool(api.global_config.setting.get("move_additional_files", False))
-                pattern = str(api.global_config.setting.get("move_additional_files_pattern", ""))
+                move_additional = bool(api.global_config.setting["move_additional_files"])
+                pattern = str(api.global_config.setting["move_additional_files_pattern"])
             except (AttributeError, TypeError):
                 pass
             if move_additional and str(pattern).strip():
@@ -61,7 +71,7 @@ def on_file_post_save(api, file):  # type: ignore[no-untyped-def]
                 )
                 api.plugin_config[WARNED_KEY] = True
 
-        rules = coerce_rules(api.plugin_config.get(RULES_KEY))
+        rules = coerce_rules(api.plugin_config[RULES_KEY])
 
         # Best-effort conflict policy: Picard does not expose the per-file decision.
         conflict = "rename"
